@@ -718,7 +718,7 @@ export default function DocumentsPage({
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4 text-center sm:text-left">
             <p className="text-xs sm:text-sm text-gray-600">
-              © 2024 CertificadosApp. Documentos seguros y verificados.
+              © 2025 Certificados Transmeralda. Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
               <span>Soporte técnico</span>

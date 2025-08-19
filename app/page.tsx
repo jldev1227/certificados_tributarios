@@ -197,7 +197,7 @@ export default function Home() {
                 <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
                   <p className="text-sm text-emerald-700 text-center">
                     💡 <strong>Tip:</strong> Ingresa el NIT sin puntos ni
-                    guiones, solo números
+                    guiones, ni dígito de verificación, solo números
                   </p>
                 </div>
               </div>
