@@ -1,21 +1,18 @@
 import Image from "next/image";
-import axios from "axios";
 import { Suspense } from "react";
 import {
   FileText,
-  Download,
   ExternalLink,
   Building2,
   FileX,
   ArrowLeft,
   Shield,
   Calendar,
-  Eye,
   AlertTriangle,
   RefreshCw,
   Wifi,
   Server,
-  HelpCircle
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,25 +30,37 @@ interface CompanyData {
   nombre_empresa?: string;
   estado?: string;
   error?: {
-    type: 'not_found' | 'server_error' | 'network_error' | 'invalid_nit' | 'config_error';
+    type:
+      | "not_found"
+      | "server_error"
+      | "network_error"
+      | "invalid_nit"
+      | "config_error";
     message: string;
     details?: string;
   };
 }
 
-function getErrorType(status: number): 'not_found' | 'server_error' | 'network_error' | 'invalid_nit' | 'config_error' {
+function getErrorType(
+  status: number,
+):
+  | "not_found"
+  | "server_error"
+  | "network_error"
+  | "invalid_nit"
+  | "config_error" {
   switch (status) {
     case 400:
-      return 'invalid_nit';
+      return "invalid_nit";
     case 404:
-      return 'not_found';
+      return "not_found";
     case 500:
     case 503:
-      return 'server_error';
+      return "server_error";
     case 403:
-      return 'config_error';
+      return "config_error";
     default:
-      return 'server_error';
+      return "server_error";
   }
 }
 
@@ -60,7 +69,7 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
     // ✅ Construir URL para API Route de Next.js
     let apiUrl: string;
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // ✅ En el cliente - usar origen actual del navegador
       apiUrl = `${window.location.origin}/api/empresas/${nit}`;
     } else {
@@ -69,19 +78,19 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXTAUTH_URL
           ? process.env.NEXTAUTH_URL
-          : 'http://localhost:3001'; // Puerto por defecto de Next.js
+          : "http://localhost:3002"; // Puerto por defecto de Next.js
 
       apiUrl = `${baseUrl}/api/empresas/${nit}`;
     }
 
     // ✅ Usar fetch nativo en lugar de axios (mejor para Next.js)
     const response = await fetch(apiUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-      cache: 'no-cache', // Evitar cache para datos dinámicos
+      cache: "no-cache", // Evitar cache para datos dinámicos
       next: { revalidate: 0 }, // Next.js specific - no cache
     });
 
@@ -95,8 +104,9 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
         error: {
           type: getErrorType(response.status),
           message: data.error || `Error HTTP ${response.status}`,
-          details: data.details || `La API respondió con código ${response.status}`
-        }
+          details:
+            data.details || `La API respondió con código ${response.status}`,
+        },
       };
     }
 
@@ -104,32 +114,33 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
     return {
       documentos: data.documentos || [],
       nombre_empresa: data.nombre_empresa,
-      estado: data.estado
+      estado: data.estado,
     };
-
   } catch (error: any) {
     console.error("❌ Error al consultar API Route:", error);
 
     // ✅ Manejar errores de red y otros errores
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
       return {
         documentos: [],
         error: {
-          type: 'network_error',
-          message: 'Error de conexión',
-          details: 'No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.'
-        }
+          type: "network_error",
+          message: "Error de conexión",
+          details:
+            "No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.",
+        },
       };
     }
 
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
       return {
         documentos: [],
         error: {
-          type: 'network_error',
-          message: 'Error de conexión',
-          details: 'No se pudo conectar con el servidor de la API. Verifica que el servidor esté funcionando.'
-        }
+          type: "network_error",
+          message: "Error de conexión",
+          details:
+            "No se pudo conectar con el servidor de la API. Verifica que el servidor esté funcionando.",
+        },
       };
     }
 
@@ -137,10 +148,10 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
     return {
       documentos: [],
       error: {
-        type: 'server_error',
-        message: 'Error del sistema',
-        details: `Error interno: ${error.message || 'Error desconocido al consultar la API'}`
-      }
+        type: "server_error",
+        message: "Error del sistema",
+        details: `Error interno: ${error.message || "Error desconocido al consultar la API"}`,
+      },
     };
   }
 }
@@ -166,20 +177,26 @@ function DocumentsSkeleton() {
 }
 
 // ✅ Componente para manejo de errores (SIN onClick handlers)
-function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }) {
+function ErrorState({
+  error,
+  nit,
+}: {
+  error: CompanyData["error"];
+  nit: string;
+}) {
   if (!error) return null;
 
   const getErrorIcon = (type: string) => {
     switch (type) {
-      case 'not_found':
+      case "not_found":
         return FileX;
-      case 'network_error':
+      case "network_error":
         return Wifi;
-      case 'server_error':
+      case "server_error":
         return Server;
-      case 'invalid_nit':
+      case "invalid_nit":
         return AlertTriangle;
-      case 'config_error':
+      case "config_error":
         return HelpCircle;
       default:
         return HelpCircle;
@@ -188,18 +205,18 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
 
   const getErrorColor = (type: string) => {
     switch (type) {
-      case 'not_found':
-        return 'orange';
-      case 'network_error':
-        return 'blue';
-      case 'server_error':
-        return 'red';
-      case 'invalid_nit':
-        return 'yellow';
-      case 'config_error':
-        return 'purple';
+      case "not_found":
+        return "orange";
+      case "network_error":
+        return "blue";
+      case "server_error":
+        return "red";
+      case "invalid_nit":
+        return "yellow";
+      case "config_error":
+        return "purple";
       default:
-        return 'gray';
+        return "gray";
     }
   };
 
@@ -209,20 +226,31 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
   return (
     <div className="text-center py-12">
       {/* Contenedor principal del error */}
-      <div className={`w-32 h-32 mx-auto mb-6 bg-${color}-50 rounded-full flex items-center justify-center relative overflow-hidden`}>
+      <div
+        className={`w-32 h-32 mx-auto mb-6 bg-${color}-50 rounded-full flex items-center justify-center relative overflow-hidden`}
+      >
         {/* Efecto de ondas para error de red */}
-        {error.type === 'network_error' && (
+        {error.type === "network_error" && (
           <div className="absolute inset-0">
-            <div className={`absolute inset-4 bg-${color}-100 rounded-full animate-ping`}></div>
-            <div className={`absolute inset-8 bg-${color}-200 rounded-full animate-ping`} style={{ animationDelay: '0.5s' }}></div>
+            <div
+              className={`absolute inset-4 bg-${color}-100 rounded-full animate-ping`}
+            ></div>
+            <div
+              className={`absolute inset-8 bg-${color}-200 rounded-full animate-ping`}
+              style={{ animationDelay: "0.5s" }}
+            ></div>
           </div>
         )}
 
         {/* Icono principal */}
-        <IconComponent className={`w-16 h-16 text-${color}-500 relative z-10`} />
+        <IconComponent
+          className={`w-16 h-16 text-${color}-500 relative z-10`}
+        />
 
         {/* Badge de estado para errores críticos */}
-        {(error.type === 'server_error' || error.type === 'network_error' || error.type === 'config_error') && (
+        {(error.type === "server_error" ||
+          error.type === "network_error" ||
+          error.type === "config_error") && (
           <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
             <span className="text-xs text-white font-bold">!</span>
           </div>
@@ -235,15 +263,19 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
       </h3>
 
       {/* Descripción detallada */}
-      <div className={`max-w-lg mx-auto mb-8 p-4 bg-${color}-50 rounded-xl border border-${color}-200`}>
+      <div
+        className={`max-w-lg mx-auto mb-8 p-4 bg-${color}-50 rounded-xl border border-${color}-200`}
+      >
         <p className={`text-${color}-700 text-sm leading-relaxed mb-3`}>
           {error.details}
         </p>
 
         {/* Información adicional según tipo de error */}
-        {error.type === 'not_found' && (
+        {error.type === "not_found" && (
           <div className="mt-4 p-3 bg-white rounded-lg border border-orange-200">
-            <h4 className="font-semibold text-orange-700 text-sm mb-2">¿Qué puedes hacer?</h4>
+            <h4 className="font-semibold text-orange-700 text-sm mb-2">
+              ¿Qué puedes hacer?
+            </h4>
             <ul className="text-xs text-orange-600 space-y-1 list-disc list-inside">
               <li>Verifica que el NIT esté escrito correctamente</li>
               <li>Asegúrate de no incluir puntos ni guiones</li>
@@ -252,9 +284,11 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
           </div>
         )}
 
-        {error.type === 'network_error' && (
+        {error.type === "network_error" && (
           <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-700 text-sm mb-2">Consejos de conexión:</h4>
+            <h4 className="font-semibold text-blue-700 text-sm mb-2">
+              Consejos de conexión:
+            </h4>
             <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
               <li>Verifica tu conexión a internet</li>
               <li>Intenta recargar la página</li>
@@ -263,9 +297,11 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
           </div>
         )}
 
-        {error.type === 'config_error' && (
+        {error.type === "config_error" && (
           <div className="mt-4 p-3 bg-white rounded-lg border border-purple-200">
-            <h4 className="font-semibold text-purple-700 text-sm mb-2">Error de configuración:</h4>
+            <h4 className="font-semibold text-purple-700 text-sm mb-2">
+              Error de configuración:
+            </h4>
             <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside">
               <li>Variable de entorno API_BASE_URL no configurada</li>
               <li>Contacta al administrador del sistema</li>
@@ -276,17 +312,21 @@ function ErrorState({ error, nit }: { error: CompanyData['error']; nit: string }
       </div>
 
       {/* Información de estado del sistema */}
-      {(error.type === 'server_error' || error.type === 'config_error') && (
+      {(error.type === "server_error" || error.type === "config_error") && (
         <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-sm mx-auto">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span>Estado del sistema: {error.type === 'config_error' ? 'Configuración incorrecta' : 'Verificando...'}</span>
+            <span>
+              Estado del sistema:{" "}
+              {error.type === "config_error"
+                ? "Configuración incorrecta"
+                : "Verificando..."}
+            </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {error.type === 'config_error'
-              ? 'Contacta al administrador para resolver la configuración'
-              : 'Nuestro equipo técnico ha sido notificado automáticamente'
-            }
+            {error.type === "config_error"
+              ? "Contacta al administrador para resolver la configuración"
+              : "Nuestro equipo técnico ha sido notificado automáticamente"}
           </p>
         </div>
       )}
@@ -301,7 +341,7 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
     if (!size) return "Tamaño desconocido";
 
     // ✅ Convertir a número si es string
-    const sizeInBytes = typeof size === 'string' ? parseInt(size, 10) : size;
+    const sizeInBytes = typeof size === "string" ? parseInt(size, 10) : size;
 
     // ✅ Verificar que sea un número válido
     if (isNaN(sizeInBytes) || sizeInBytes <= 0) {
@@ -327,26 +367,26 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
 
   const formatDate = (date?: string) => {
     if (!date) return "Fecha no disponible";
-    return new Date(date).toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("es-CO", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf':
-        return '/assets/pdf.svg';
-      case 'doc':
-      case 'docx':
-        return '/assets/docx.svg';
-      case 'xls':
-      case 'xlsx':
-        return '/assets/xlsx.svg';
+      case "pdf":
+        return "/assets/pdf.svg";
+      case "doc":
+      case "docx":
+        return "/assets/docx.svg";
+      case "xls":
+      case "xlsx":
+        return "/assets/xlsx.svg";
       default:
-        return '/assets/file.svg';
+        return "/assets/file.svg";
     }
   };
 
@@ -396,25 +436,6 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-            title="Vista previa"
-          >
-            <Eye className="w-4 h-4" />
-          </a>
-
-          <a
-            href={doc.url}
-            download
-            className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-            title="Descargar"
-          >
-            <Download className="w-4 h-4" />
-          </a>
-
-          <a
-            href={doc.url}
-            target="_blank"
-            rel="noopener noreferrer"
             className="p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg transition-colors"
             title="Abrir en nueva pestaña"
           >
@@ -437,8 +458,9 @@ function EmptyState({ nit }: { nit: string }) {
         No hay documentos disponibles
       </h3>
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
-        No se encontraron certificados para la empresa con NIT <strong>{nit}</strong>.
-        Los documentos podrían estar siendo procesados o no estar disponibles en este momento.
+        No se encontraron certificados para la empresa con NIT{" "}
+        <strong>{nit}</strong>. Los documentos podrían estar siendo procesados o
+        no estar disponibles en este momento.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
@@ -463,7 +485,7 @@ function EmptyState({ nit }: { nit: string }) {
 export default async function DocumentsPage({
   params,
 }: {
-  params: Promise<{ nit: string }>
+  params: Promise<{ nit: string }>;
 }) {
   const { nit } = await params;
   const companyData = await fetchDocuments(nit);
@@ -471,11 +493,12 @@ export default async function DocumentsPage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
-      {/* Header */}
+      {/* Header Responsive */}
       <header className="bg-white/80 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-40">
-        <div className="container mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          {/* Header Móvil */}
+          <div className="py-3 sm:hidden">
+            <div className="flex items-center justify-between mb-3">
               <Link
                 href="/"
                 className="p-2 hover:bg-emerald-50 rounded-lg transition-colors"
@@ -483,136 +506,175 @@ export default async function DocumentsPage({
               >
                 <ArrowLeft className="w-5 h-5 text-emerald-600" />
               </Link>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
+
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Certificados Empresariales</h1>
-                  <p className="text-sm text-gray-500">Documentos oficiales y certificaciones</p>
+                  <h1 className="text-lg font-bold text-gray-900">
+                    Certificados
+                  </h1>
                 </div>
               </div>
-            </div>
 
-            <div className="hidden sm:flex items-center gap-2 text-sm text-emerald-600">
-              <Shield className="w-4 h-4" />
-              <span>Documentos Verificados</span>
+              <div className="flex items-center gap-1 text-xs text-emerald-600">
+                <Shield className="w-3 h-3" />
+                <span className="hidden xs:inline">Verificado</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 text-center">
+              Documentos oficiales y certificaciones
+            </p>
+          </div>
+
+          {/* Header Tablet y Desktop */}
+          <div className="hidden sm:block py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/"
+                  className="p-2 hover:bg-emerald-50 rounded-lg transition-colors"
+                  title="Volver al inicio"
+                >
+                  <ArrowLeft className="w-5 h-5 text-emerald-600" />
+                </Link>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+                      Certificados Empresariales
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      Documentos oficiales y certificaciones
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-emerald-600">
+                <Shield className="w-4 h-4" />
+                <span>Documentos Verificados</span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto max-w-6xl px-4 py-8">
-        {/* Si hay error, mostrar solo el estado de error */}
+      {/* Main Content Responsive */}
+      <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+        {/* Si hay error */}
         {error ? (
-          <div className="grid lg:grid-cols-12 gap-8 items-start">
-            {/* Sidebar con mascota - siempre visible */}
-            <div className="lg:col-span-4 order-2 lg:order-1">
-              <div className="sticky top-24">
-                <div className="bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl p-8 text-center shadow-lg">
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
+            {/* Sidebar con mascota - Error */}
+            <div className="lg:col-span-4 lg:order-2">
+              <div className="lg:sticky lg:top-24">
+                <div className="bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl p-4 sm:p-6 lg:p-8 text-center shadow-lg">
                   <Image
                     src="/assets/codi.png"
                     width={280}
                     height={300}
                     alt="Cody - Mascota de Transmeralda"
-                    className="mx-auto mb-4 drop-shadow-lg grayscale hover:grayscale-0 transition-all duration-300"
+                    className="mx-auto grayscale"
                     priority
                   />
-                  <h3 className="text-lg font-semibold text-red-700 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-2">
                     ¡Ups! Algo salió mal
                   </h3>
-                  <p className="text-red-600 text-sm">
-                    No te preocupes, estamos aquí para ayudarte a resolver este problema
+                  <p className="text-red-600 text-xs sm:text-sm">
+                    No te preocupes, estamos aquí para ayudarte a resolver este
+                    problema
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Error Content */}
-            <div className="lg:col-span-8 order-1 lg:order-2">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-red-100 shadow-lg">
+            <div className="lg:col-span-8 lg:order-1">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-red-100 shadow-lg">
                 <ErrorState error={error} nit={nit} />
               </div>
             </div>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-12 gap-8 items-start">
-
-            {/* Sidebar con mascota */}
-            <div className="lg:col-span-4 order-2 lg:order-1">
-              <div className="sticky top-24">
-                <div className="bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl p-8 text-center shadow-lg">
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
+            {/* Sidebar con mascota - Éxito */}
+            <div className="lg:col-span-4 lg:order-2">
+              <div className="lg:sticky lg:top-24">
+                <div className="bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl p-4 sm:p-6 lg:p-8 text-center shadow-lg">
                   <Image
                     src="/assets/codi.png"
-                    width={280}
+                    width={400}
                     height={300}
                     alt="Cody - Mascota de Transmeralda"
-                    className="mx-auto mb-4 drop-shadow-lg"
+                    className="mx-auto"
                     priority
                   />
-                  <h3 className="text-lg font-semibold text-emerald-700 mb-2">
-                    {documentos.length > 0 ? "¡Documentos Listos!" : "¿Sin documentos?"}
+                  <h3 className="text-base sm:text-lg font-semibold text-emerald-700 mb-2">
+                    {documentos.length > 0
+                      ? "¡Documentos Listos!"
+                      : "¿Sin documentos?"}
                   </h3>
-                  <p className="text-emerald-600 text-sm">
+                  <p className="text-emerald-600 text-xs sm:text-sm leading-relaxed">
                     {documentos.length > 0
                       ? "Todos tus certificados están disponibles para consulta y descarga"
-                      : "No se encontraron documentos para esta empresa en este momento"
-                    }
+                      : "No se encontraron documentos para esta empresa en este momento"}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Content Area */}
-            <div className="lg:col-span-8 order-1 lg:order-2">
+            <div className="lg:col-span-8 lg:order-1 space-y-4 sm:space-y-6">
               {/* Info de la empresa */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-emerald-100 shadow-lg">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-emerald-600" />
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-emerald-100 shadow-lg">
+                <div className="flex flex-row items-center gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-1 break-words">
                       {nombre_empresa || `NIT: ${nit}`}
                     </h2>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                    <div className="flex flex-col xs:flex-row xs:flex-wrap items-start xs:items-center gap-2 xs:gap-4 text-sm text-gray-600">
                       {estado && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <span className="font-medium">Estado:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${estado === 'activo'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              estado === "activo"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
                             {estado}
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">Documentos:</span>
-                        <span className="text-emerald-600 font-semibold">{documentos.length}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Lista de documentos o estado vacío */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100 shadow-lg">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">
+              {/* Lista de documentos */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-emerald-100 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                     Certificados Disponibles
                   </h3>
                   {documentos.length > 0 && (
-                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
-                      {documentos.length} documento{documentos.length !== 1 ? 's' : ''}
+                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium self-start sm:self-auto">
+                      {documentos.length} documento
+                      {documentos.length !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
 
                 <Suspense fallback={<DocumentsSkeleton />}>
                   {documentos.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {documentos.map((doc, index) => (
                         <DocumentCard key={index} doc={doc} index={index} />
                       ))}
@@ -625,12 +687,15 @@ export default async function DocumentsPage({
 
               {/* Información adicional */}
               {documentos.length > 0 && (
-                <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-emerald-600 mt-0.5" />
+                <div className="p-3 sm:p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <Shield className="w-5 h-5 text-emerald-600 flex-shrink-0 sm:mt-0.5" />
                     <div className="text-sm text-emerald-700">
                       <p className="font-medium mb-1">Documentos Verificados</p>
-                      <p>Todos los certificados mostrados son documentos oficiales y han sido verificados por nuestro sistema.</p>
+                      <p className="leading-relaxed">
+                        Todos los certificados mostrados son documentos
+                        oficiales y han sido verificados por nuestro sistema.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -640,14 +705,14 @@ export default async function DocumentsPage({
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-emerald-100 bg-white/50 backdrop-blur-sm mt-12">
-        <div className="container mx-auto max-w-6xl px-4 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-600">
+      {/* Footer Responsive */}
+      <footer className="border-t border-emerald-100 bg-white/50 backdrop-blur-sm mt-8 sm:mt-12">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4 text-center sm:text-left">
+            <p className="text-xs sm:text-sm text-gray-600">
               © 2024 CertificadosApp. Documentos seguros y verificados.
             </p>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
               <span>Soporte técnico</span>
               <span>•</span>
               <span>Datos protegidos</span>
