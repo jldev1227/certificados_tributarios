@@ -1,5 +1,7 @@
+"use client";
+
 import Image from "next/image";
-import { Suspense } from "react";
+import { useState, useEffect, use } from "react";
 import {
   FileText,
   ExternalLink,
@@ -64,40 +66,37 @@ function getErrorType(
   }
 }
 
+// ✅ FUNCIÓN MOVIDA FUERA DEL COMPONENTE
 async function fetchDocuments(nit: string): Promise<CompanyData> {
   try {
-    // ✅ Construir URL para API Route de Next.js
-    let apiUrl: string;
+    const apiUrl = `/api/empresas/${nit}`;
 
-    if (typeof window !== "undefined") {
-      // ✅ En el cliente - usar origen actual del navegador
-      apiUrl = `${window.location.origin}/api/empresas/${nit}`;
-    } else {
-      // ✅ En el servidor (SSR) - construir URL absoluta
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXTAUTH_URL
-          ? process.env.NEXTAUTH_URL
-          : "http://localhost:3002"; // Puerto por defecto de Next.js
-
-      apiUrl = `${baseUrl}/api/empresas/${nit}`;
-    }
-
-    // ✅ Usar fetch nativo en lugar de axios (mejor para Next.js)
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      cache: "no-cache", // Evitar cache para datos dinámicos
-      next: { revalidate: 0 }, // Next.js specific - no cache
+      cache: "no-cache",
     });
 
-    // ✅ Parsear respuesta JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error(`❌ Respuesta no es JSON. Content-Type: ${contentType}`);
+
+      return {
+        documentos: [],
+        error: {
+          type: "server_error",
+          message: "Error del servidor",
+          details:
+            "El servidor no respondió con JSON válido. Verifica que la API Route esté configurada correctamente.",
+        },
+      };
+    }
+
     const data = await response.json();
 
-    // ✅ Manejar respuestas de error de la API Route
     if (!response.ok) {
       return {
         documentos: [],
@@ -110,7 +109,17 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
       };
     }
 
-    // ✅ Respuesta exitosa - mapear datos de la API Route
+    if (!data.success) {
+      return {
+        documentos: [],
+        error: {
+          type: "server_error",
+          message: data.error || "Error del servidor",
+          details: data.details || "La API retornó success: false",
+        },
+      };
+    }
+
     return {
       documentos: data.documentos || [],
       nombre_empresa: data.nombre_empresa,
@@ -119,38 +128,34 @@ async function fetchDocuments(nit: string): Promise<CompanyData> {
   } catch (error: any) {
     console.error("❌ Error al consultar API Route:", error);
 
-    // ✅ Manejar errores de red y otros errores
+    if (error.name === "SyntaxError" && error.message.includes("JSON")) {
+      return {
+        documentos: [],
+        error: {
+          type: "server_error",
+          message: "Error de configuración",
+          details: "El servidor retornó HTML en lugar de JSON.",
+        },
+      };
+    }
+
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       return {
         documentos: [],
         error: {
           type: "network_error",
           message: "Error de conexión",
-          details:
-            "No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.",
+          details: "No se pudo conectar con el servidor.",
         },
       };
     }
 
-    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
-      return {
-        documentos: [],
-        error: {
-          type: "network_error",
-          message: "Error de conexión",
-          details:
-            "No se pudo conectar con el servidor de la API. Verifica que el servidor esté funcionando.",
-        },
-      };
-    }
-
-    // ✅ Error genérico
     return {
       documentos: [],
       error: {
         type: "server_error",
         message: "Error del sistema",
-        details: `Error interno: ${error.message || "Error desconocido al consultar la API"}`,
+        details: `Error interno: ${error.message || "Error desconocido"}`,
       },
     };
   }
@@ -176,13 +181,15 @@ function DocumentsSkeleton() {
   );
 }
 
-// ✅ Componente para manejo de errores (SIN onClick handlers)
+// ✅ Componente para manejo de errores
 function ErrorState({
   error,
   nit,
+  onRetry,
 }: {
   error: CompanyData["error"];
   nit: string;
+  onRetry: () => void;
 }) {
   if (!error) return null;
 
@@ -225,11 +232,9 @@ function ErrorState({
 
   return (
     <div className="text-center py-12">
-      {/* Contenedor principal del error */}
       <div
         className={`w-32 h-32 mx-auto mb-6 bg-${color}-50 rounded-full flex items-center justify-center relative overflow-hidden`}
       >
-        {/* Efecto de ondas para error de red */}
         {error.type === "network_error" && (
           <div className="absolute inset-0">
             <div
@@ -242,12 +247,10 @@ function ErrorState({
           </div>
         )}
 
-        {/* Icono principal */}
         <IconComponent
           className={`w-16 h-16 text-${color}-500 relative z-10`}
         />
 
-        {/* Badge de estado para errores críticos */}
         {(error.type === "server_error" ||
           error.type === "network_error" ||
           error.type === "config_error") && (
@@ -257,79 +260,46 @@ function ErrorState({
         )}
       </div>
 
-      {/* Título del error */}
       <h3 className={`text-2xl font-bold text-${color}-600 mb-3`}>
         {error.message}
       </h3>
 
-      {/* Descripción detallada */}
       <div
         className={`max-w-lg mx-auto mb-8 p-4 bg-${color}-50 rounded-xl border border-${color}-200`}
       >
         <p className={`text-${color}-700 text-sm leading-relaxed mb-3`}>
           {error.details}
         </p>
-
-        {/* Información adicional según tipo de error */}
-        {error.type === "not_found" && (
-          <div className="mt-4 p-3 bg-white rounded-lg border border-orange-200">
-            <h4 className="font-semibold text-orange-700 text-sm mb-2">
-              ¿Qué puedes hacer?
-            </h4>
-            <ul className="text-xs text-orange-600 space-y-1 list-disc list-inside">
-              <li>Verifica que el NIT esté escrito correctamente</li>
-              <li>Asegúrate de no incluir puntos ni guiones</li>
-              <li>Confirma que la empresa esté registrada en el sistema</li>
-            </ul>
-          </div>
-        )}
-
-        {error.type === "network_error" && (
-          <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-700 text-sm mb-2">
-              Consejos de conexión:
-            </h4>
-            <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
-              <li>Verifica tu conexión a internet</li>
-              <li>Intenta recargar la página</li>
-              <li>Verifica que el servidor de la API esté funcionando</li>
-            </ul>
-          </div>
-        )}
-
-        {error.type === "config_error" && (
-          <div className="mt-4 p-3 bg-white rounded-lg border border-purple-200">
-            <h4 className="font-semibold text-purple-700 text-sm mb-2">
-              Error de configuración:
-            </h4>
-            <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside">
-              <li>Variable de entorno API_BASE_URL no configurada</li>
-              <li>Contacta al administrador del sistema</li>
-              <li>Verifica el archivo .env.local</li>
-            </ul>
-          </div>
-        )}
       </div>
 
-      {/* Información de estado del sistema */}
-      {(error.type === "server_error" || error.type === "config_error") && (
-        <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-sm mx-auto">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span>
-              Estado del sistema:{" "}
-              {error.type === "config_error"
-                ? "Configuración incorrecta"
-                : "Verificando..."}
-            </span>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {error.type === "config_error"
-              ? "Contacta al administrador para resolver la configuración"
-              : "Nuestro equipo técnico ha sido notificado automáticamente"}
-          </p>
-        </div>
-      )}
+      {/* ✅ Botones de acción con handlers */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {error.type === "not_found" || error.type === "invalid_nit" ? (
+          <Link
+            href="/"
+            className={`inline-flex items-center gap-2 px-6 py-3 bg-${color}-600 text-white rounded-xl hover:bg-${color}-700 transition-all duration-200`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Consultar otro NIT
+          </Link>
+        ) : (
+          <button
+            onClick={onRetry}
+            className={`inline-flex items-center gap-2 px-6 py-3 bg-${color}-600 text-white rounded-xl hover:bg-${color}-700 transition-all duration-200`}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reintentar
+          </button>
+        )}
+
+        <Link
+          href="/"
+          className={`inline-flex items-center gap-2 px-6 py-3 border border-${color}-600 text-${color}-600 rounded-xl hover:bg-${color}-50 transition-colors`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Ir al inicio
+        </Link>
+      </div>
     </div>
   );
 }
@@ -337,23 +307,14 @@ function ErrorState({
 // Componente para cada documento
 function DocumentCard({ doc, index }: { doc: Document; index: number }) {
   const formatFileSize = (size?: string | number) => {
-    // ✅ Verificar si el tamaño existe
     if (!size) return "Tamaño desconocido";
-
-    // ✅ Convertir a número si es string
     const sizeInBytes = typeof size === "string" ? parseInt(size, 10) : size;
+    if (isNaN(sizeInBytes) || sizeInBytes <= 0) return "Tamaño no válido";
 
-    // ✅ Verificar que sea un número válido
-    if (isNaN(sizeInBytes) || sizeInBytes <= 0) {
-      return "Tamaño no válido";
-    }
-
-    // ✅ Constantes para conversión
     const KB = 1024;
     const MB = KB * 1024;
     const GB = MB * 1024;
 
-    // ✅ Convertir según el tamaño
     if (sizeInBytes >= GB) {
       return `${(sizeInBytes / GB).toFixed(2)} GB`;
     } else if (sizeInBytes >= MB) {
@@ -393,7 +354,6 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
   return (
     <div className="group bg-white border border-gray-200 hover:border-emerald-300 rounded-xl p-4 transition-all duration-200 hover:shadow-lg">
       <div className="flex items-center gap-4">
-        {/* Icono del archivo */}
         <div className="relative">
           <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
             <img
@@ -409,7 +369,6 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
           </div>
         </div>
 
-        {/* Información del documento */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 truncate group-hover:text-emerald-700 transition-colors">
             {doc.nombre}
@@ -430,7 +389,6 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
           </div>
         </div>
 
-        {/* Botones de acción */}
         <div className="flex items-center gap-2">
           <a
             href={doc.url}
@@ -447,8 +405,8 @@ function DocumentCard({ doc, index }: { doc: Document; index: number }) {
   );
 }
 
-// Componente para el estado vacío (sin errores, pero sin documentos)
-function EmptyState({ nit }: { nit: string }) {
+// Componente para el estado vacío
+function EmptyState({ nit, onRetry }: { nit: string; onRetry: () => void }) {
   return (
     <div className="text-center py-12">
       <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
@@ -459,8 +417,7 @@ function EmptyState({ nit }: { nit: string }) {
       </h3>
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
         No se encontraron certificados para la empresa con NIT{" "}
-        <strong>{nit}</strong>. Los documentos podrían estar siendo procesados o
-        no estar disponibles en este momento.
+        <strong>{nit}</strong>.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
@@ -470,26 +427,80 @@ function EmptyState({ nit }: { nit: string }) {
           <ArrowLeft className="w-4 h-4" />
           Consultar otro NIT
         </Link>
-        <Link
-          href={`/certificados/${nit}`}
+        <button
+          onClick={onRetry}
           className="inline-flex items-center gap-2 px-6 py-3 border border-emerald-600 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Actualizar página
-        </Link>
+        </button>
       </div>
     </div>
   );
 }
 
-export default async function DocumentsPage({
+// ✅ COMPONENTE PRINCIPAL CORREGIDO - SIN ASYNC
+export default function DocumentsPage({
   params,
 }: {
   params: Promise<{ nit: string }>;
 }) {
-  const { nit } = await params;
-  const companyData = await fetchDocuments(nit);
+  // ✅ Type assertion
+  const resolvedParams = use(params) as { nit: string };
+
+  const [companyData, setCompanyData] = useState<CompanyData>({
+    documentos: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [nit] = useState(resolvedParams.nit);
+
+  // ✅ Función para cargar datos
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const result = await fetchDocuments(nit);
+      setCompanyData(result);
+    } catch (error) {
+      console.error("❌ Error al cargar datos:", error);
+      setCompanyData({
+        documentos: [],
+        error: {
+          type: "server_error",
+          message: "Error del sistema",
+          details: "Error inesperado al cargar los datos",
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ useEffect para cargar datos una sola vez
+  useEffect(() => {
+    loadData();
+  }, [nit]); // Solo se ejecuta cuando cambia el NIT
+
+  // ✅ Función para retry
+  const handleRetry = () => {
+    loadData();
+  };
+
   const { documentos, nombre_empresa, estado, error } = companyData;
+
+  // ✅ Mostrar loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600 mx-auto mb-4" />
+          <p className="text-emerald-700 font-medium">
+            Cargando certificados...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
@@ -576,7 +587,7 @@ export default async function DocumentsPage({
                     src="/assets/codi.png"
                     width={280}
                     height={300}
-                    alt="Cody - Mascota de Transmeralda"
+                    alt="Cody - Mascota"
                     className="mx-auto grayscale"
                     priority
                   />
@@ -584,8 +595,7 @@ export default async function DocumentsPage({
                     ¡Ups! Algo salió mal
                   </h3>
                   <p className="text-red-600 text-xs sm:text-sm">
-                    No te preocupes, estamos aquí para ayudarte a resolver este
-                    problema
+                    No te preocupes, estamos aquí para ayudarte
                   </p>
                 </div>
               </div>
@@ -594,7 +604,7 @@ export default async function DocumentsPage({
             {/* Error Content */}
             <div className="lg:col-span-8 lg:order-1">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-red-100 shadow-lg">
-                <ErrorState error={error} nit={nit} />
+                <ErrorState error={error} nit={nit} onRetry={handleRetry} />
               </div>
             </div>
           </div>
@@ -608,7 +618,7 @@ export default async function DocumentsPage({
                     src="/assets/codi.png"
                     width={400}
                     height={300}
-                    alt="Cody - Mascota de Transmeralda"
+                    alt="Cody - Mascota"
                     className="mx-auto"
                     priority
                   />
@@ -619,8 +629,8 @@ export default async function DocumentsPage({
                   </h3>
                   <p className="text-emerald-600 text-xs sm:text-sm leading-relaxed">
                     {documentos.length > 0
-                      ? "Todos tus certificados están disponibles para consulta y descarga"
-                      : "No se encontraron documentos para esta empresa en este momento"}
+                      ? "Todos tus certificados están disponibles"
+                      : "No se encontraron documentos para esta empresa"}
                   </p>
                 </div>
               </div>
@@ -672,17 +682,15 @@ export default async function DocumentsPage({
                   )}
                 </div>
 
-                <Suspense fallback={<DocumentsSkeleton />}>
-                  {documentos.length > 0 ? (
-                    <div className="space-y-3 sm:space-y-4">
-                      {documentos.map((doc, index) => (
-                        <DocumentCard key={index} doc={doc} index={index} />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState nit={nit} />
-                  )}
-                </Suspense>
+                {documentos.length > 0 ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {documentos.map((doc, index) => (
+                      <DocumentCard key={index} doc={doc} index={index} />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState nit={nit} onRetry={handleRetry} />
+                )}
               </div>
 
               {/* Información adicional */}
@@ -694,7 +702,7 @@ export default async function DocumentsPage({
                       <p className="font-medium mb-1">Documentos Verificados</p>
                       <p className="leading-relaxed">
                         Todos los certificados mostrados son documentos
-                        oficiales y han sido verificados por nuestro sistema.
+                        oficiales verificados.
                       </p>
                     </div>
                   </div>
@@ -705,7 +713,7 @@ export default async function DocumentsPage({
         )}
       </main>
 
-      {/* Footer Responsive */}
+      {/* Footer */}
       <footer className="border-t border-emerald-100 bg-white/50 backdrop-blur-sm mt-8 sm:mt-12">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4 text-center sm:text-left">
