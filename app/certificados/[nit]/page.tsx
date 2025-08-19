@@ -416,7 +416,7 @@ function EmptyState({ nit, onRetry }: { nit: string; onRetry: () => void }) {
         No hay documentos disponibles
       </h3>
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
-        No se encontraron certificados para la empresa con NIT{" "}
+        No se encontraron certificados para el NIT{" "}
         <strong>{nit}</strong>.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -556,7 +556,7 @@ export default function DocumentsPage({
                   </div>
                   <div>
                     <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                      Certificados Empresariales
+                      Certificados Tributarios
                     </h1>
                     <p className="text-sm text-gray-500">
                       Documentos oficiales y certificaciones

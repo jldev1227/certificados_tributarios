@@ -85,7 +85,7 @@ export default function Home() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
                     <Building2 className="w-4 h-4" />
-                    Portal Empresarial
+                    Portal Tributario
                   </div>
 
                   <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -94,7 +94,7 @@ export default function Home() {
                   </h1>
 
                   <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
-                    Consulta y gestiona todos tus certificados empresariales de
+                    Consulta y gestiona todos tus certificados tributarios de
                     forma
                     <span className="text-emerald-600 font-semibold">
                       {" "}
@@ -134,7 +134,7 @@ export default function Home() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-gray-700">
-                      NIT de tu empresa
+                      NIT
                     </label>
                     <div className="relative">
                       <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
