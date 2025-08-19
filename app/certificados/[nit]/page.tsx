@@ -181,7 +181,7 @@ function DocumentsSkeleton() {
   );
 }
 
-// ✅ Componente para manejo de errores
+// ✅ Componente para manejo de errores con colores seguros
 function ErrorState({
   error,
   nit,
@@ -210,74 +210,248 @@ function ErrorState({
     }
   };
 
-  const getErrorColor = (type: string) => {
+  // ✅ Función para obtener clases de colores seguras
+  const getColorClasses = (type: string) => {
     switch (type) {
       case "not_found":
-        return "orange";
+        return {
+          bgCircle: "bg-amber-50",
+          bgPing1: "bg-amber-100",
+          bgPing2: "bg-amber-200",
+          textIcon: "text-amber-500",
+          textTitle: "text-amber-600",
+          bgDescription: "bg-amber-50",
+          borderDescription: "border-amber-200",
+          textDescription: "text-amber-700",
+          bgButton: "bg-amber-600 hover:bg-amber-700",
+          borderButton: "border-amber-600",
+          textButton: "text-amber-600",
+          hoverButton: "hover:bg-amber-50",
+        };
       case "network_error":
-        return "blue";
+        return {
+          bgCircle: "bg-blue-50",
+          bgPing1: "bg-blue-100",
+          bgPing2: "bg-blue-200",
+          textIcon: "text-blue-500",
+          textTitle: "text-blue-600",
+          bgDescription: "bg-blue-50",
+          borderDescription: "border-blue-200",
+          textDescription: "text-blue-700",
+          bgButton: "bg-blue-600 hover:bg-blue-700",
+          borderButton: "border-blue-600",
+          textButton: "text-blue-600",
+          hoverButton: "hover:bg-blue-50",
+        };
       case "server_error":
-        return "red";
+        return {
+          bgCircle: "bg-red-50",
+          bgPing1: "bg-red-100",
+          bgPing2: "bg-red-200",
+          textIcon: "text-red-500",
+          textTitle: "text-red-600",
+          bgDescription: "bg-red-50",
+          borderDescription: "border-red-200",
+          textDescription: "text-red-700",
+          bgButton: "bg-red-600 hover:bg-red-700",
+          borderButton: "border-red-600",
+          textButton: "text-red-600",
+          hoverButton: "hover:bg-red-50",
+        };
       case "invalid_nit":
-        return "yellow";
+        return {
+          bgCircle: "bg-yellow-50",
+          bgPing1: "bg-yellow-100",
+          bgPing2: "bg-yellow-200",
+          textIcon: "text-yellow-500",
+          textTitle: "text-yellow-600",
+          bgDescription: "bg-yellow-50",
+          borderDescription: "border-yellow-200",
+          textDescription: "text-yellow-700",
+          bgButton: "bg-yellow-600 hover:bg-yellow-700",
+          borderButton: "border-yellow-600",
+          textButton: "text-yellow-600",
+          hoverButton: "hover:bg-yellow-50",
+        };
       case "config_error":
-        return "purple";
+        return {
+          bgCircle: "bg-purple-50",
+          bgPing1: "bg-purple-100",
+          bgPing2: "bg-purple-200",
+          textIcon: "text-purple-500",
+          textTitle: "text-purple-600",
+          bgDescription: "bg-purple-50",
+          borderDescription: "border-purple-200",
+          textDescription: "text-purple-700",
+          bgButton: "bg-purple-600 hover:bg-purple-700",
+          borderButton: "border-purple-600",
+          textButton: "text-purple-600",
+          hoverButton: "hover:bg-purple-50",
+        };
       default:
-        return "gray";
+        return {
+          bgCircle: "bg-gray-50",
+          bgPing1: "bg-gray-100",
+          bgPing2: "bg-gray-200",
+          textIcon: "text-gray-500",
+          textTitle: "text-gray-600",
+          bgDescription: "bg-gray-50",
+          borderDescription: "border-gray-200",
+          textDescription: "text-gray-700",
+          bgButton: "bg-gray-600 hover:bg-gray-700",
+          borderButton: "border-gray-600",
+          textButton: "text-gray-600",
+          hoverButton: "hover:bg-gray-50",
+        };
     }
   };
 
-  const color = getErrorColor(error.type);
+  const colors = getColorClasses(error.type);
   const IconComponent = getErrorIcon(error.type);
 
   return (
     <div className="text-center py-12">
+      {/* Ícono principal con animaciones */}
       <div
-        className={`w-32 h-32 mx-auto mb-6 bg-${color}-50 rounded-full flex items-center justify-center relative overflow-hidden`}
+        className={`w-32 h-32 mx-auto mb-6 ${colors.bgCircle} rounded-full flex items-center justify-center relative overflow-hidden`}
       >
         {error.type === "network_error" && (
           <div className="absolute inset-0">
             <div
-              className={`absolute inset-4 bg-${color}-100 rounded-full animate-ping`}
+              className={`absolute inset-4 ${colors.bgPing1} rounded-full animate-ping`}
             ></div>
             <div
-              className={`absolute inset-8 bg-${color}-200 rounded-full animate-ping`}
+              className={`absolute inset-8 ${colors.bgPing2} rounded-full animate-ping`}
               style={{ animationDelay: "0.5s" }}
             ></div>
           </div>
         )}
 
         <IconComponent
-          className={`w-16 h-16 text-${color}-500 relative z-10`}
+          className={`w-16 h-16 ${colors.textIcon} relative z-10`}
         />
 
+        {/* Badge de alerta para errores críticos */}
         {(error.type === "server_error" ||
           error.type === "network_error" ||
           error.type === "config_error") && (
-          <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+          <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
             <span className="text-xs text-white font-bold">!</span>
           </div>
         )}
       </div>
 
-      <h3 className={`text-2xl font-bold text-${color}-600 mb-3`}>
+      {/* Título del error */}
+      <h3 className={`text-2xl font-bold ${colors.textTitle} mb-3`}>
         {error.message}
       </h3>
 
+      {/* Descripción detallada */}
       <div
-        className={`max-w-lg mx-auto mb-8 p-4 bg-${color}-50 rounded-xl border border-${color}-200`}
+        className={`max-w-lg mx-auto mb-8 p-4 ${colors.bgDescription} rounded-xl border ${colors.borderDescription}`}
       >
-        <p className={`text-${color}-700 text-sm leading-relaxed mb-3`}>
+        <p className={`${colors.textDescription} text-sm leading-relaxed mb-3`}>
           {error.details}
         </p>
+
+        {/* Información adicional según tipo de error */}
+        {error.type === "not_found" && (
+          <div className="mt-4 p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+            <h4 className="font-semibold text-orange-700 text-sm mb-2 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4" />
+              ¿Qué puedes hacer?
+            </h4>
+            <ul className="text-xs text-orange-600 space-y-1 list-disc list-inside pl-2">
+              <li>Verifica que el NIT esté escrito correctamente</li>
+              <li>Asegúrate de no incluir puntos ni guiones</li>
+              <li>Confirma que la empresa esté registrada en el sistema</li>
+            </ul>
+          </div>
+        )}
+
+        {error.type === "network_error" && (
+          <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200 shadow-sm">
+            <h4 className="font-semibold text-blue-700 text-sm mb-2 flex items-center gap-2">
+              <Wifi className="w-4 h-4" />
+              Consejos de conexión:
+            </h4>
+            <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside pl-2">
+              <li>Verifica tu conexión a internet</li>
+              <li>Intenta recargar la página</li>
+              <li>Verifica que el servidor de la API esté funcionando</li>
+            </ul>
+          </div>
+        )}
+
+        {error.type === "server_error" && (
+          <div className="mt-4 p-3 bg-white rounded-lg border border-red-200 shadow-sm">
+            <h4 className="font-semibold text-red-700 text-sm mb-2 flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              Error del servidor:
+            </h4>
+            <ul className="text-xs text-red-600 space-y-1 list-disc list-inside pl-2">
+              <li>El servidor está experimentando problemas temporales</li>
+              <li>Nuestro equipo técnico ha sido notificado</li>
+              <li>Intenta nuevamente en unos minutos</li>
+            </ul>
+          </div>
+        )}
+
+        {error.type === "invalid_nit" && (
+          <div className="mt-4 p-3 bg-white rounded-lg border border-yellow-200 shadow-sm">
+            <h4 className="font-semibold text-yellow-700 text-sm mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Formato incorrecto:
+            </h4>
+            <ul className="text-xs text-yellow-600 space-y-1 list-disc list-inside pl-2">
+              <li>El NIT debe contener solo números</li>
+              <li>Longitud esperada: 9-10 dígitos</li>
+              <li>No incluyas puntos, guiones o espacios</li>
+            </ul>
+          </div>
+        )}
+
+        {error.type === "config_error" && (
+          <div className="mt-4 p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
+            <h4 className="font-semibold text-purple-700 text-sm mb-2 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4" />
+              Error de configuración:
+            </h4>
+            <ul className="text-xs text-purple-600 space-y-1 list-disc list-inside pl-2">
+              <li>Variable de entorno API_BASE_URL no configurada</li>
+              <li>Contacta al administrador del sistema</li>
+              <li>Verifica el archivo .env.local</li>
+            </ul>
+          </div>
+        )}
       </div>
 
-      {/* ✅ Botones de acción con handlers */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      {/* Información de estado del sistema */}
+      {(error.type === "server_error" || error.type === "config_error") && (
+        <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-sm mx-auto shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <span>
+              Estado del sistema:{" "}
+              {error.type === "config_error"
+                ? "Configuración incorrecta"
+                : "Verificando..."}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {error.type === "config_error"
+              ? "Contacta al administrador para resolver la configuración"
+              : "Nuestro equipo técnico ha sido notificado automáticamente"}
+          </p>
+        </div>
+      )}
+
+      {/* ✅ Botones de acción con colores seguros */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
         {error.type === "not_found" || error.type === "invalid_nit" ? (
           <Link
             href="/"
-            className={`inline-flex items-center gap-2 px-6 py-3 bg-${color}-600 text-white rounded-xl hover:bg-${color}-700 transition-all duration-200`}
+            className={`inline-flex items-center gap-2 px-6 py-3 ${colors.bgButton} text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
           >
             <ArrowLeft className="w-4 h-4" />
             Consultar otro NIT
@@ -285,7 +459,7 @@ function ErrorState({
         ) : (
           <button
             onClick={onRetry}
-            className={`inline-flex items-center gap-2 px-6 py-3 bg-${color}-600 text-white rounded-xl hover:bg-${color}-700 transition-all duration-200`}
+            className={`inline-flex items-center gap-2 px-6 py-3 ${colors.bgButton} text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
           >
             <RefreshCw className="w-4 h-4" />
             Reintentar
@@ -294,7 +468,7 @@ function ErrorState({
 
         <Link
           href="/"
-          className={`inline-flex items-center gap-2 px-6 py-3 border border-${color}-600 text-${color}-600 rounded-xl hover:bg-${color}-50 transition-colors`}
+          className={`inline-flex items-center gap-2 px-6 py-3 border ${colors.borderButton} ${colors.textButton} rounded-xl ${colors.hoverButton} transition-all duration-200 shadow-sm hover:shadow-md`}
         >
           <ArrowLeft className="w-4 h-4" />
           Ir al inicio
@@ -416,8 +590,7 @@ function EmptyState({ nit, onRetry }: { nit: string; onRetry: () => void }) {
         No hay documentos disponibles
       </h3>
       <p className="text-gray-500 mb-6 max-w-md mx-auto">
-        No se encontraron certificados para el NIT{" "}
-        <strong>{nit}</strong>.
+        No se encontraron certificados para el NIT <strong>{nit}</strong>.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
